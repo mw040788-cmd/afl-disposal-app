@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: afl-disposal-edge-engine-v6
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
