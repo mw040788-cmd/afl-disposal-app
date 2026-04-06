@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFL Disposal Edge Engine — V7 Starter</title>
+<style>
+:root{
+  --bg:#08101d; --panel:#10192c; --panel2:#16233a; --panel3:#0c1424;
+  --text:#eef4ff; --muted:#9db1d1; --border:#273757;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#07101c,#0c1730);color:var(--text)}
+.wrap{max-width:1320px;margin:0 auto;padding:22px}
+h1{margin:0 0 8px;font-size:32px}
+h2{margin:0 0 12px;font-size:20px}
+.sub{color:var(--muted);margin-bottom:16px}
+.panel{background:rgba(16,25,44,.95);border:1px solid var(--border);border-radius:18px;padding:18px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1.05fr .95fr}
+.g4{grid-template-columns:repeat(4,1fr)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select,textarea,button{
+  width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);
+  background:#16233a;color:var(--text);font-size:14px;font-family:inherit
+}
+textarea{min-height:92px;resize:vertical}
+button{border:none;cursor:pointer;font-weight:800;background:linear-gradient(180deg,#6ab3ff,#3f82ff)}
+button.secondary{background:#1b2844;border:1px solid var(--border)}
+button.good{background:linear-gradient(180deg,#46d57f,#1ebf68)}
+.drop{border:1px dashed var(--border);border-radius:16px;padding:14px;text-align:center;background:#0c1424}
+.drop img{max-width:100%;max-height:420px;border-radius:12px;margin-top:10px}
+.status{padding:10px 12px;border-radius:12px;background:#132038;border:1px solid var(--border);font-size:13px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{padding:14px;border-radius:14px;background:#10192d;border:1px solid var(--border)}
+.players,.results{display:grid;gap:12px}
+.card{padding:14px;border-radius:16px;background:#10192d;border:1px solid var(--border)}
+.player-grid{display:grid;grid-template-columns:1.4fr .42fr .55fr .55fr;gap:10px;align-items:end}
+.factor-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.decision{font-size:24px;font-weight:900}
+.more{color:#2ecc71}.less{color:#ff6b6b}
+.helper{padding:12px;border-radius:14px;background:#0e1729;border:1px solid var(--border)}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0d1526;padding:10px;border-radius:12px;white-space:pre-wrap}
+.small{font-size:12px}.muted{color:var(--muted)}
+.result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+@media (max-width:1100px){
+  .g2,.g4,.row,.summary,.player-grid,.factor-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AFL Disposal Edge Engine — V7 Starter</h1>
+  <div class="sub">V7 fixes the newline bug and makes the whole flow automatic.</div>
+
+  <div class="grid g2">
+    <div class="panel">
+      <h2>1) Screenshot or pasted text</h2>
+      <div class="drop">
+        <div>Upload the betting screenshot. Server-side OCR parses it.</div>
+        <input id="imageInput" type="file" accept="image/*" />
+        <img id="preview" style="display:none" />
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="uploadBtn">Upload + OCR + Auto Parse</button>
+        <button id="parseTextBtn" class="secondary">Parse Pasted Text</button>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Status</label>
+        <div id="status" class="status">Waiting for input.</div>
+      </div>
+
+      <div class="field">
+        <label>OCR / pasted text</label>
+        <textarea id="ocrText" placeholder="Paste copied screenshot text here if needed."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>Matchup</label><input id="matchup" placeholder="e.g. Hawthorn vs Geelong"></div>
+        <div class="field"><label>Venue</label><input id="venue" placeholder="e.g. MCG / Marvel / The Gabba"></div>
+      </div>
+
+      <div class="grid g4">
+        <div class="field"><label>Weather</label><select id="weather"><option value="dry">Dry</option><option value="windy">Windy</option><option value="wet">Wet</option><option value="humid">Humid / dewy</option></select></div>
+        <div class="field"><label>Roof</label><select id="roof"><option value="na">N/A</option><option value="closed">Closed</option><option value="open">Open</option></select></div>
+        <div class="field"><label>Expected script</label><select id="script"><option value="auto">Auto</option><option value="fast">Fast</option><option value="slow">Slow</option><option value="blowout">Blowout</option><option value="mixed">Mixed</option></select></div>
+        <div class="field"><label>Opponent allowance</label><select id="opponentStyle"><option value="auto">Auto</option><option value="allows-defenders">Allows defenders</option><option value="allows-mids">Allows mids</option><option value="restrictive">Restrictive</option><option value="neutral">Neutral</option></select></div>
+      </div>
+
+      <div class="field">
+        <label>Parsed player lines</label>
+        <textarea id="parsedText" placeholder="Chosen players will appear here on separate lines."></textarea>
+      </div>
+
+      <div class="helper small muted">Upload + OCR + Auto Parse should now do the whole lot automatically.</div>
+    </div>
+
+    <div class="panel">
+      <h2>2) Candidate debug + output</h2>
+      <div class="summary">
+        <div class="kpi"><div class="small muted">Best leg</div><div id="bestLeg">—</div></div>
+        <div class="kpi"><div class="small muted">Cut leg</div><div id="cutLeg">—</div></div>
+        <div class="kpi"><div class="small muted">Script read</div><div id="scriptRead">—</div></div>
+        <div class="kpi"><div class="small muted">Opponent read</div><div id="opponentRead">—</div></div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="useCandidatesBtn" class="good">Use Top 5 Candidates</button>
+        <button id="scoreBtn" class="secondary">Re-Score Players</button>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <label>Candidate debug list</label>
+        <textarea id="candidateBox" placeholder="Server candidate list appears here."></textarea>
+      </div>
+
+      <div id="results" class="results"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <h2>3) Player editor</h2>
+    <div id="players" class="players"></div>
+  </div>
+</div>
+
+<script>
+const players = [];
+const $ = id => document.getElementById(id);
+let lastCandidates = [];
+
+$("imageInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { $("preview").src = ev.target.result; $("preview").style.display = "block"; };
+  reader.readAsDataURL(file);
+});
+
+async function postJson(url, body){
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return await res.json();
+}
+function setStatus(msg){ $("status").textContent = msg; }
+function linesToText(arr){ return arr.map(c => `${c.name} ${Number(c.line).toFixed(1)}`).join("\n"); }
+
+function loadParsedIntoEditor(){
+  const arr = [];
+  $("parsedText").value.split(/\n+/).map(x => x.trim()).filter(Boolean).forEach(line => {
+    const m = line.match(/^(.+?)\s+(\d+\.\d)$/);
+    if (m){
+      arr.push({
+        name: m[1].trim(),
+        line: Number(m[2]),
+        recentHits: 2,
+        recentMisses: 3,
+        prevMatchup: 0,
+        venueHist: 0,
+        tagRisk: 0,
+        subRisk: 0,
+        role: "inside",
+        comp: "medium",
+        blowout: "mixed"
+      });
+    }
+  });
+  players.length = 0;
+  arr.forEach(p => players.push(p));
+  renderPlayers();
+}
+
+async function autoScore(){
+  if (!players.length){
+    setStatus("No players loaded into editor.");
+    return;
+  }
+  setStatus("Scoring players…");
+  try{
+    const data = await postJson("/api/score", {
+      matchup: $("matchup").value,
+      venue: $("venue").value,
+      weather: $("weather").value,
+      roof: $("roof").value,
+      script: $("script").value,
+      opponentStyle: $("opponentStyle").value,
+      players
+    });
+
+    $("scriptRead").textContent = data.script || "—";
+    $("opponentRead").textContent = data.opponentStyle || "—";
+    $("bestLeg").textContent = data.best ? `${data.best.name} — ${data.best.decision}` : "—";
+    $("cutLeg").textContent = data.cut ? `${data.cut.name} — ${data.cut.decision}` : "—";
+
+    const box = $("results");
+    box.innerHTML = "";
+    (data.results || []).forEach(r => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.innerHTML = `
+        <div class="result-head">
+          <div>
+            <div style="font-weight:800">${r.name} <span class="muted">${Number(r.line).toFixed(1)}</span></div>
+            <div class="small muted">${r.role} • ${r.confidence} confidence</div>
+          </div>
+          <div style="text-align:right">
+            <div class="decision ${r.decision === "MORE" ? "more" : "less"}">${r.decision}</div>
+            <div class="small muted">score ${Number(r.total).toFixed(1)}</div>
+          </div>
+        </div>`;
+      box.appendChild(el);
+    });
+    setStatus("Players scored.");
+  } catch(err){
+    console.error(err);
+    setStatus("Scoring failed.");
+  }
+}
+
+function useTopCandidates(){
+  if (!lastCandidates.length){
+    setStatus("No candidates yet.");
+    return;
+  }
+  $("parsedText").value = linesToText(lastCandidates.slice(0, 5));
+  loadParsedIntoEditor();
+  autoScore();
+}
+
+async function handleParseResponse(data){
+  if (!data.ok) throw new Error(data.error || "Parse failed");
+  $("ocrText").value = data.rawText || "";
+  if (data.guessed?.matchup && !$("matchup").value) $("matchup").value = data.guessed.matchup;
+  if (data.guessed?.venue && !$("venue").value) $("venue").value = data.guessed.venue;
+
+  lastCandidates = data.candidates || [];
+  $("candidateBox").value = lastCandidates.map(c => `${c.name} ${Number(c.line).toFixed(1)} [hits:${c.hits}]`).join("\n");
+
+  $("parsedText").value = linesToText(data.players || []);
+  loadParsedIntoEditor();
+  await autoScore();
+}
+
+async function uploadScreenshot(){
+  const file = $("imageInput").files[0];
+  if (!file){
+    setStatus("Choose a screenshot first.");
+    return;
+  }
+  setStatus("Uploading and OCR parsing screenshot…");
+  const form = new FormData();
+  form.append("image", file);
+
+  try{
+    const res = await fetch("/api/parse-screenshot", { method: "POST", body: form });
+    const data = await res.json();
+    await handleParseResponse(data);
+  } catch(err){
+    console.error(err);
+    setStatus("Screenshot parse failed.");
+  }
+}
+
+async function parseText(){
+  const text = $("ocrText").value.trim();
+  if (!text){
+    setStatus("Paste text first.");
+    return;
+  }
+  setStatus("Parsing pasted text…");
+  try{
+    const data = await postJson("/api/parse-text", { text });
+    await handleParseResponse(data);
+  } catch(err){
+    console.error(err);
+    setStatus("Pasted text parse failed.");
+  }
+}
+
+function renderPlayers(){
+  const box = $("players");
+  box.innerHTML = "";
+  players.forEach((p, i) => {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <div class="player-grid">
+        <div class="field"><label>Player</label><input data-i="${i}" data-k="name" value="${p.name}"></div>
+        <div class="field"><label>Line</label><input data-i="${i}" data-k="line" type="number" step="0.5" value="${p.line}"></div>
+        <div class="field"><label>Role</label>
+          <select data-i="${i}" data-k="role">
+            ${["inside","outside","hybrid","mid-hybrid"].map(r => `<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field"><label>Comp</label>
+          <select data-i="${i}" data-k="comp">
+            ${["low","medium","high"].map(r => `<option value="${r}" ${p.comp===r?'selected':''}>${r}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="factor-grid">
+        <div class="field"><label>Recent hits</label><input data-i="${i}" data-k="recentHits" type="number" value="${p.recentHits}"></div>
+        <div class="field"><label>Recent misses</label><input data-i="${i}" data-k="recentMisses" type="number" value="${p.recentMisses}"></div>
+        <div class="field"><label>Prev matchup</label><input data-i="${i}" data-k="prevMatchup" type="number" value="${p.prevMatchup}"></div>
+        <div class="field"><label>Venue history</label><input data-i="${i}" data-k="venueHist" type="number" value="${p.venueHist}"></div>
+        <div class="field"><label>Tag risk</label><input data-i="${i}" data-k="tagRisk" type="number" value="${p.tagRisk}"></div>
+        <div class="field"><label>Sub risk</label><input data-i="${i}" data-k="subRisk" type="number" value="${p.subRisk}"></div>
+        <div class="field"><label>Blowout fit</label>
+          <select data-i="${i}" data-k="blowout">
+            ${["good","mixed","bad"].map(r => `<option value="${r}" ${p.blowout===r?'selected':''}>${r}</option>`).join("")}
+          </select>
+        </div>
+      </div>`;
+    box.appendChild(el);
+  });
+
+  box.querySelectorAll("input,select").forEach(el => {
+    el.addEventListener("input", e => {
+      const i = Number(e.target.dataset.i), k = e.target.dataset.k;
+      players[i][k] = ["line","recentHits","recentMisses","prevMatchup","venueHist","tagRisk","subRisk"].includes(k) ? Number(e.target.value) : e.target.value;
+    });
+  });
+}
+
+$("uploadBtn").addEventListener("click", uploadScreenshot);
+$("parseTextBtn").addEventListener("click", parseText);
+$("useCandidatesBtn").addEventListener("click", useTopCandidates);
+$("scoreBtn").addEventListener("click", autoScore);
+</script>
+</body>
+</html>
